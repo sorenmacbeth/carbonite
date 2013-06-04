@@ -82,6 +82,28 @@
                       (.readClassAndObject registry input)
                       (.readClassAndObject registry input)))))))
 
+(defn write-record
+  [^Kyro registry ^Output output r]
+  (.writeString output (.getName (class r)) true)
+  (.writeInt output (count r) true)
+  (doseq [[k v] m]
+    (.writeClassAndObject registry output k)
+    (.writeClassAndObject registry output v)))
+
+(defn read-record
+  [^Kryo registry ^Input input] 
+  (let [name (.readString input true)]
+    (doall
+     (loop [remaining (.readInt input true)
+            data (transient {})]
+       (if (zero? remaining)
+         (persistent! data)
+         ;; TODO: somehow create an instance of our record class here
+         (recur (dec remaining)
+                (assoc! data
+                        (.readClassAndObject registry input)
+                        (.readClassAndObject registry input))))))))
+
 (defn write-string-seq [^Output output string-seq]
   (.writeString output (s/join string-seq)))
 
